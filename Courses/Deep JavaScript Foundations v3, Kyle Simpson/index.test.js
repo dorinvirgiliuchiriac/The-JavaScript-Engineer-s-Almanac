@@ -87,20 +87,6 @@ test("NaN, isNaN(x) & Number.IsNaN(x)", () => {
   expect(Number.isNaN({})).toBeFalsy();
 });
 
-test("Boxing", () => {
-  /**
-   * The statement "in JavaScript everything is an object" is false.
-   * We have primitives and objects. When we call an object method
-   * on a primitive, it is wrapped in a corresponding object and then,
-   * that method is called. This is called "BOXING". Boxing is automatic
-   * coersion.
-   */
-
-  expect("string".toUpperCase()).toEqual("STRING");
-  expect(true.toString()).toEqual("true");
-  expect((5).toString()).toEqual("5");
-});
-
 test("undefined vs undeclared vs uninitialized (tdz)", () => {
   /**
    * "undefined" > the variable is declared and no value was given to it
@@ -141,11 +127,143 @@ test("Fundamental objects", () => {
 /// Coercion ///
 ////////////////
 
-// to continue here
+test("String()", () => {
+  expect(String(null)).toBe("null");
+  expect(String(undefined)).toBe("undefined");
+  expect(String(true)).toBe("true");
+  expect(String(false)).toBe("false");
+  expect(String(-23)).toBe("-23");
+  expect(String({ x: 12 })).toBe("[object Object]");
+  expect(
+    String({
+      toString() {
+        return "this is a string";
+      },
+    })
+  ).toBe("this is a string");
+  expect(String([1, 2, 3])).toBe("1,2,3");
+  expect(String([[1, 2, [3]], undefined, null, [{}]])).toBe(
+    "1,2,3,,,[object Object]"
+  );
+});
+
+test("Boolean()", () => {
+  /**
+   * Falsy values: false, "", 0, null, undefined, NaN;
+   * Truthy values: true, "str", 23, -23, [], {}, function(){}, ...;
+   */
+
+  expect(false || "" || 0 || null || undefined || NaN).toBeFalsy();
+  expect(true && "str" && 23 && [] && {} && function () {}).toBeTruthy();
+});
+
+test("Number()", () => {
+  expect(Number("")).toBe(0);
+  expect(Number("0009")).toBe(9);
+  expect(Number("3.14")).toBe(3.14);
+  expect(Number(false)).toBe(0);
+  expect(Number(true)).toBe(1);
+  expect(Number(null)).toBe(0);
+  expect(Number(undefined)).toBe(NaN);
+  expect(Number("abc")).toBe(NaN);
+});
+
+test("Boxing", () => {
+  /**
+   * The statement "in JavaScript everything is an object" is false.
+   * We have primitives and objects. When we call an object method
+   * on a primitive, it is wrapped in a corresponding object and then,
+   * that method is called. This is called "BOXING". Boxing is automatic
+   * coersion.
+   */
+
+  expect("string".toUpperCase()).toEqual("STRING");
+  expect(true.toString()).toEqual("true");
+  expect((5).toString()).toEqual("5");
+});
+
+test("Importance of coersion", () => {
+  /**
+   * Many experts say not to care about the types and coersion and skip it from
+   * learning, because we can work without using it. WRONG! We are using all the
+   * time, even if we don't know it explicitally.
+   */
+
+  const number = 21;
+  const bool = false;
+  expect(`value: ${number}`).toEqual("value: 21");
+  expect(`value: ${bool}`).toEqual("value: false");
+
+  expect(23 - "34").toBe(-11);
+  expect(23 + "34").toBe("2334");
+  expect(23 + Number("34")).toBe(57);
+
+  /**
+   * The coersion is recursive, meaning that it will try to coerse the values
+   * till will get a result, or will rais an error because of type incompatibilities.
+   *
+   * 1 < 2       true
+   * 2 < 3       true
+   * ----------------
+   * 1 < 2 < 3   true
+   * ----------------
+   * (1 < 2) < 3
+   * true < 3
+   * 1 < 3
+   *
+   * 3 > 2       true
+   * 2 > 1       true
+   * -----------------
+   * 3 > 2 > 1   false
+   * -----------------
+   * (3 > 2) > 1
+   * true > 1
+   * 1 > 1
+   */
+
+  expect(1 < 2 < 3).toBeTruthy();
+  expect(3 > 2 > 1).toBeFalsy();
+});
+
+test("Equality", () => {
+  /**
+   * Wrong statement:
+   *   == checks only value (loos)
+   *   === checks the value and the type (strict)
+   *
+   * Correct statement:
+   *   == allows coersion and if they are the same type, will perform ===
+   *   === doesn't allow coersion and will return false if the compared values
+   *   have different types.
+   */
+
+  expect(23 == "23").toBeTruthy();
+  expect(23 === "23").toBeFalsy();
+
+  /**
+   * true == "1"
+   * Number(true) == Number("1")
+   * 1 == 1
+   */
+  expect(true == "1").toBeTruthy();
+
+  /**
+   * Objects are equal only if they have the same reference in memory
+   */
+  const a = { a: 1 };
+  const b = a;
+  const c = { a: 1 };
+
+  expect(a == b).toBeTruthy();
+  expect(a === b).toBeTruthy();
+  expect(b == c).toBeFalsy();
+});
 
 /////////////
 /// Scope ///
 /////////////
+
+// here
 
 ///////////////
 /// Objects ///

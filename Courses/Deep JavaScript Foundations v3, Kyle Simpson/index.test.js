@@ -235,6 +235,16 @@ test("Equality", () => {
    *   == allows coersion and if they are the same type, will perform ===
    *   === doesn't allow coersion and will return false if the compared values
    *   have different types.
+   *
+   * [images/abstract-equality.jpg] (Documentation of ==)
+   * Note here that the first operation is checking if the values are the same
+   * type and if they are, return the result of performing ===.
+   * Also, the coersion will try to convert the values to numbers and repeat the
+   * process recursivly till it gets to the final answer.
+   *
+   * [images/strict-equality.jpg] (Documentation of ===)
+   * Note here that the NaN and 0, -0 values are made artificially to be equal
+   * or not.
    */
 
   expect(23 == "23").toBeTruthy();
@@ -242,8 +252,11 @@ test("Equality", () => {
 
   /**
    * true == "1"
-   * Number(true) == Number("1")
+   * Number(true) == "1"
+   * 1 == "1"
+   * 1 == Number("1")
    * 1 == 1
+   * true
    */
   expect(true == "1").toBeTruthy();
 

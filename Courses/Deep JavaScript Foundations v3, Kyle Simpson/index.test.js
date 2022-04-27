@@ -182,8 +182,8 @@ describe("Coercion", () => {
   test("Importance of coersion", () => {
     /**
      * Many experts say not to care about the types and coersion and skip it
-     * from learning, because we can work without using it. WRONG! We are using
-     * all the time, even if we don't know it explicitally.
+     * from learning, because we can work without using it. WRONG! We are
+     * using all the time, even if we don't know it explicitally.
      */
 
     const number = 21;
@@ -231,18 +231,18 @@ describe("Coercion", () => {
      *
      * Correct statement:
      *   == allows coersion and if they are the same type, will perform ===
-     *   === doesn't allow coersion and will return false if the compared values
-     *   have different types.
+     *   === doesn't allow coersion and will return false if the compared
+     *   values have different types.
      *
-     * [images/abstract-equality.jpg] (Documentation of ==)
-     * Note here that the first operation is checking if the values are the same
-     * type and if they are, return the result of performing ===.
-     * Also, the coersion will try to convert the values to numbers and repeat
-     * the process recursivly till it gets to the final answer.
+     * [abstract-equality.jpg] (Documentation of ==)
+     * Note here that the first operation is checking if the values are the
+     * same type and if they are, return the result of performing ===.
+     * Also, the coersion will try to convert the values to numbers and
+     * repeat the process recursivly till it gets to the final answer.
      *
-     * [images/strict-equality.jpg] (Documentation of ===)
-     * Note here that the NaN and 0, -0 values are made artificially to be equal
-     * or not.
+     * [strict-equality.jpg] (Documentation of ===)
+     * Note here that the NaN and 0, -0 values are made artificially to be
+     * equal or not.
      */
 
     expect(23 == "23").toBeTruthy();
@@ -285,29 +285,29 @@ describe("Lexical Scope", () => {
   test("First pass: Compilation", () => {
     /**
      * Step 1 - Compilation:
-     *   - at this step, the code is parsed top to bottom once for defining the
-     *   lexical scopes and the result of this step is a blueprint used later by
-     *   the engine to interogate the scope manager for the values of the needed
-     *   variables. No code is executed at this step.
+     *   - at this step, the code is parsed top to bottom once for defining
+     *   the lexical scopes and the result of this step is a blueprint used
+     *   later by the engine to interogate the scope manager for the values
+     *   of the needed variables. No code is executed at this step.
      *   - whenever the parser finds a variable declaration (var, let, const,
-     *   function), it adds it's name to the current parent scope and initializez
-     *   it with undefined (hoisting). Also, it saves the position it was fond on,
-     *   so that it can rais a TDZ error at the execution step, if that's the
-     *   case. Functions are initialized with their declared function body, not
-     *   undefined, as their value.
-     *   - whenever a function is declared, a new scope is created and the direct
-     *   child variables declared in the function body will be attached to that
-     *   scope. If a function is declared inside a block scope, the name will be
-     *   added to the first parent function scope, but the function body will first
-     *   be made available only to the block scope, and only after the execution
-     *   thread passes that block scope, the function body will be made available
-     *   to the parent function body also.
-     *   - in case of the block scopes, a scope will be created only if a value is
-     *   declared inside of it.
-     *   - only let and const will get attached to the parent block scope, var and
-     *   function will be attached to the first function body.
+     *   function), it adds it's name to the current parent scope and
+     *   initializez it with undefined (hoisting). Also, it saves the position
+     *   it was fond on, so that it can rais a TDZ error at the execution step,
+     *   if that's the case. Functions are initialized with their declared
+     *   function body, not undefined, as their value.
+     *   - whenever a function is declared, a new scope is created and the
+     *   direct child variables declared in the function body will be attached
+     *   to that scope. [REF: 1] If a function is declared inside a block scope, the name
+     *   will be added to the first parent function scope, but the function body
+     *   will first be made available only to the block scope, and only after the
+     *   execution thread passes that block scope, the function body will be made
+     *   available to the parent function body also.
+     *   - in case of the block scopes, a scope will be created only if a value
+     *   is declared inside of it.
+     *   - only let and const will get attached to the parent block scope, var
+     *   and function will be attached to the first function body.
      *
-     * [images/nested-scopes.jpg] (Visual representation of lexical scopes)
+     * [nested-scopes.jpg] (Visual representation of lexical scopes)
      */
 
     expect(x1).toBe(undefined);
@@ -344,6 +344,7 @@ describe("Lexical Scope", () => {
     jest.runAllTimers();
     expect(array2).toEqual([0, 1, 2]);
 
+    // [REF: 1]
     (function () {
       expect(print1).toBe(undefined);
       expect(print2).toBe(undefined);
@@ -371,15 +372,15 @@ describe("Lexical Scope", () => {
      *   Engine communicates with the scope manager on 2 actions: value retrieval
      *   and value assignation.
      *   - if the scope manager doesn't find a variable in the current scope, it
-     *   will search recursively all parent scopes till it reaches the global scope.
-     *   In that case, if it was about value retrievel, will rais a reference error,
-     *   but if it was about value assignation and we are not in strict mode, it will
-     *   create a global variable with that access name and asign that value to it.
-     *   But in strict mode the assignation to a non existing variable will rais an
-     *   error.
-     *   - if there are 2 variables declared with var, with the same name, they will
-     *   be treated as the same. If the variables are defined with let or const, an
-     *   error will be raised.
+     *   will search recursively all parent scopes till it reaches the global
+     *   scope. In that case, if it was about value retrievel, will rais a
+     *   reference error, but if it was about value assignation and we are not in
+     *   strict mode, it will create a global variable with that access name and
+     *   asign that value to it. But in strict mode the assignation to a non
+     *   existing variable will rais an error.
+     *   - if there are 2 variables declared with var, with the same name, they
+     *   will be treated as the same. If the variables are defined with let or
+     *   const, an error will be raised.
      */
 
     var x = 1;
@@ -394,6 +395,7 @@ describe("Lexical Scope", () => {
     })();
     expect(x).toBe(1);
     expect(y).toBe(3);
+    expect(global.z).toBe(12);
 
     var a = 1;
     var a = 2;
@@ -401,7 +403,91 @@ describe("Lexical Scope", () => {
   });
 
   test("Closure", () => {
-    // continue here
+    /**
+     * Closure is when a function accesses its original lexical scope when it
+     * is executed outside that lexical scope. Closure is only when these two
+     * conditions are met.
+     *
+     * Closure helps up keep variables private to the outside world so that we
+     * have the ability to change those variables only from within the functions,
+     * that make the object of closuer, because they are the only one able to
+     * access that scope.
+     *
+     * Garbage collector will delete a scope only when there are no more
+     * references to that scope.
+     *
+     * Module pattern is a way for us to hide functionality from the outer scope
+     * so that we can encapsulate functionality that is private. We should use
+     * the module pattern only when we need to hide functionality or properties,
+     * otherways we should simply create a name space
+     */
+
+    // Singleton Module pattern
+    const funcWithClosure = (function getFuncWithClosure() {
+      let value = 0;
+      return function funcWithClosure() {
+        value++;
+        return value;
+      };
+    })();
+
+    expect(funcWithClosure()).toEqual(1);
+    expect(funcWithClosure()).toEqual(2);
+
+    // Module Factory pattern
+    function getFuncWithClosureModule(initialValue) {
+      let value = initialValue;
+      return function funcWithClosure() {
+        value++;
+        return value;
+      };
+    }
+    const funcWithClosure2 = getFuncWithClosureModule(10);
+
+    expect(funcWithClosure2()).toEqual(11);
+    expect(funcWithClosure2()).toEqual(12);
+
+    // this is not Module Pattern, because we can access obj.value
+    const obj = {
+      value: 0,
+      funcWithClosure: function () {
+        this.value++;
+        return this.value;
+      },
+    };
+
+    expect(obj.funcWithClosure()).toEqual(1);
+    expect(obj.value).toEqual(1);
+  });
+
+  test("Import/Export & Require", () => {
+    /**
+     * Import/Export & Require
+     *
+     * Both approaches help us create modules out of files automatically. The
+     * content of the file is wrapped in a singleton module pattern function,
+     * the same way we've seen previously and it returns the exports object.
+     *
+     * If we require or import the same file multiple times, the exports object
+     * is cached and reused. It is a singleton.
+     *
+     * Modern browsers support the use of modules but still, it is better to
+     * bundle the code with the help of Webpack and Babel.
+     *
+     * Require works out of the box with node, because is's part of CommonJS,
+     * but import/export need a more specific setup, being part of ES6 now.
+     *
+     * Require loads resourses synchronous (step by step) and can import them
+     * later in the program and imports the entire module. Import/Export is
+     * asynchronous, so it's faster, it loads from the module only what is used,
+     * but it is loaded entierly at the beginning, and cannot load new modules
+     * later in the program execution.
+     */
+
+    const { func1 } = require("./module_1");
+    const { func2 } = require("./module_2");
+    expect(func1()).toEqual(1);
+    expect(func2()).toEqual(2);
   });
 });
 
@@ -448,5 +534,36 @@ describe("Objects", () => {
 
     expect(person2.name).toBeFalsy();
     expect(person2.age).toEqual(32);
+  });
+
+  test("Prototype", () => {
+    function Animal(name) {
+      this.name = name;
+    }
+    Animal.prototype.getName = function () {
+      return this.name;
+    };
+
+    const animal = new Animal("Dog");
+    expect(animal.getName()).toEqual("Dog");
+
+    function Human(name, age) {
+      this.age = age;
+      Animal.call(this, name);
+    }
+    Human.prototype = Object.create(Animal.prototype);
+    Human.prototype.getAge = function () {
+      return this.age;
+    };
+    Human.prototype.getName = function () {
+      return (
+        this.__proto__.__proto__.getName.call(this) +
+        " " +
+        this.__proto__.getAge.call(this)
+      );
+    };
+
+    const human = new Human("Human", 12);
+    expect(human.getName()).toEqual("Human 12");
   });
 });

@@ -1,8 +1,21 @@
 (function addAccessibilityKeyboardNavigation() {
+  const ELEMENT_TYPES = {
+    Headers: "Headers",
+    Links: "Links",
+    Landmarks: "Landmarks",
+  };
+
   const ELEMENTS_OF_TYPE = {
     Header: ["H1", "H2", "H3", "H4", "H5", "H6"],
     Link: ["A"],
     Input: ["INPUT", "TEXTAREA", "SELECT"],
+    SkipSomeLandmarkChecksForChildrenOf: [
+      "ARTICLE",
+      "ASIDE",
+      "MAIN",
+      "NAV",
+      "SECTION",
+    ],
   };
 
   const KEY_CODES = {
@@ -19,6 +32,7 @@
   };
 
   let state = {
+    elementType: null,
     direction: DIRECTION.Down,
     selectedElement: {
       element: null,
@@ -44,13 +58,22 @@
 
     switch (event.keyCode) {
       case KEY_CODES.H:
-        moveToNextElementOfTypes(ELEMENTS_OF_TYPE.Header);
+        const headers = getListOfAllElementsOfTypes(
+          ELEMENTS_OF_TYPE.Header,
+          document.body
+        );
+        moveToNextElement(headers, ELEMENT_TYPES.Headers);
         break;
       case KEY_CODES.L:
-        moveToNextElementOfTypes(ELEMENTS_OF_TYPE.Link);
+        const links = getListOfAllElementsOfTypes(
+          ELEMENTS_OF_TYPE.Link,
+          document.body
+        );
+        moveToNextElement(links, ELEMENT_TYPES.Links);
         break;
       case KEY_CODES.M:
-        console.log("M");
+        const landmarks = getListOfAllLandmarks(document.body);
+        moveToNextElement(landmarks, ELEMENT_TYPES.Landmarks);
         break;
       case KEY_CODES.ArrowUp:
         state.direction = DIRECTION.Up;
@@ -65,8 +88,139 @@
     return ELEMENTS_OF_TYPE.Input.includes(document.activeElement?.tagName);
   }
 
-  function moveToNextElementOfTypes(types) {
-    const elements = getListOfAllElementsOfTypes(types, document.body);
+  function getListOfAllElementsOfTypes(types, node) {
+    if (isElementHidden(node)) {
+      return [];
+    }
+
+    const isNodeTypeInTypes = types.includes(node.tagName);
+    const result = isNodeTypeInTypes ? [node] : [];
+
+    if (!node?.children?.length) {
+      return result;
+    }
+
+    const children = Array.from(node.children).reduce((acc, child) => {
+      const children = getListOfAllElementsOfTypes(types, child);
+      return [...acc, ...children];
+    }, []);
+
+    return [...result, ...children];
+  }
+
+  function getListOfAllLandmarks(node, skipSomeLandmarkChecks = false) {
+    if (isElementHidden(node)) {
+      return [];
+    }
+
+    const isLandmark = isNodeLandmark(node, skipSomeLandmarkChecks);
+    const result = isLandmark ? [node] : [];
+
+    if (!node?.children?.length) {
+      return result;
+    }
+
+    const skipSomeLandmarkChecksForChildren =
+      ELEMENTS_OF_TYPE.SkipSomeLandmarkChecksForChildrenOf.includes(
+        node.tagName
+      );
+
+    const children = Array.from(node.children).reduce((acc, child) => {
+      const children = getListOfAllLandmarks(
+        child,
+        skipSomeLandmarkChecks || skipSomeLandmarkChecksForChildren
+      );
+      return [...acc, ...children];
+    }, []);
+
+    return [...result, ...children];
+  }
+
+  function isNodeLandmark(node, skipSomeChecks) {
+    let result =
+      isFormLandmark(node) ||
+      isNavigationLandmark(node) ||
+      isRegionLandmark(node) ||
+      isSearchLandmark(node);
+
+    if (!result && !skipSomeChecks) {
+      result =
+        isBannerLandmark(node) ||
+        isComplementaryLandmark(node) ||
+        isContentinfoLandmark(node) ||
+        isMainLandmark(node);
+    }
+
+    return result;
+  }
+
+  function isFormLandmark(node) {
+    return (
+      Boolean(node) &&
+      (node.tagName === "FORM" || node.getAttribute("role") === "form") &&
+      hasAriaLabel(node)
+    );
+  }
+
+  function isNavigationLandmark(node) {
+    return (
+      Boolean(node) &&
+      (node.tagName === "NAV" || node.getAttribute("role") === "navigation")
+    );
+  }
+
+  function isRegionLandmark(node) {
+    return (
+      Boolean(node) &&
+      (node.tagName === "SECTION" || node.getAttribute("role") === "region") &&
+      hasAriaLabel(node)
+    );
+  }
+
+  function isSearchLandmark(node) {
+    return Boolean(node) && node.getAttribute("role") === "search";
+  }
+
+  function isBannerLandmark(node) {
+    return (
+      Boolean(node) &&
+      (node.tagName === "HEADER" || node.getAttribute("role") === "banner")
+    );
+  }
+
+  function isComplementaryLandmark(node) {
+    return (
+      Boolean(node) &&
+      (node.tagName === "ASIDE" ||
+        node.getAttribute("role") === "complementary")
+    );
+  }
+
+  function isContentinfoLandmark(node) {
+    return (
+      Boolean(node) &&
+      (node.tagName === "FOOTER" || node.getAttribute("role") === "contentinfo")
+    );
+  }
+
+  function isMainLandmark(node) {
+    return (
+      Boolean(node) &&
+      (node.tagName === "MAIN" || node.getAttribute("role") === "main")
+    );
+  }
+
+  function hasAriaLabel(node) {
+    return (
+      Boolean(node.getAttribute("aria-labelledby")) ||
+      Boolean(node.getAttribute("aria-label")) ||
+      Boolean(node.getAttribute("title"))
+    );
+  }
+
+  function moveToNextElement(elements, elementType) {
+    updateDirection(elementType);
+
     if (!elements.length) {
       resetSelectedElement();
       return;
@@ -88,24 +242,11 @@
     setSelectedElement(elements[indexOfNextActiveElement]);
   }
 
-  function getListOfAllElementsOfTypes(types, parentNode) {
-    if (isElementHidden(parentNode)) {
-      return [];
+  function updateDirection(elementType) {
+    if (state.elementType !== elementType) {
+      state.elementType = elementType;
+      state.direction = DIRECTION.Down;
     }
-
-    const isParentTypeInTypes = types.includes(parentNode.tagName);
-    const result = isParentTypeInTypes ? [parentNode] : [];
-
-    if (!parentNode?.children?.length) {
-      return result;
-    }
-
-    const children = Array.from(parentNode.children).reduce((acc, child) => {
-      const children = getListOfAllElementsOfTypes(types, child);
-      return [...acc, ...children];
-    }, []);
-
-    return [...result, ...children];
   }
 
   function isElementHidden(element) {
@@ -143,7 +284,13 @@
       initialStyling: element.style,
     };
 
-    element.setAttribute("style", "border: 3px solid black !important");
+    element.setAttribute(
+      "style",
+      ` border: 4px solid black !important; 
+        background-color: #fece6d !important; 
+        color: black !important;
+        box-sizing: border-box !important;`
+    );
     element.scrollIntoView({
       behavior: "smooth",
       block: "start",

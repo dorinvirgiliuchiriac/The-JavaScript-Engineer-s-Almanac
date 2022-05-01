@@ -293,7 +293,7 @@
     );
     element.scrollIntoView({
       behavior: "smooth",
-      block: "start",
+      block: "center",
       inline: "nearest",
     });
     element.focus();

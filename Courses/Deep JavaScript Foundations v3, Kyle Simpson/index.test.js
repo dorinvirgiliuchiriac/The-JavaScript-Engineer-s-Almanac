@@ -434,7 +434,12 @@ describe("Lexical Scope", () => {
     expect(funcWithClosure()).toEqual(1);
     expect(funcWithClosure()).toEqual(2);
 
-    // Module Factory pattern
+    /**
+     * Module Factory pattern
+     *
+     * This example shows that scopes are created at runtime by rules set at
+     * the compilation step.
+     */
     function getFuncWithClosureModule(initialValue) {
       let value = initialValue;
       return function funcWithClosure() {
@@ -443,9 +448,12 @@ describe("Lexical Scope", () => {
       };
     }
     const funcWithClosure2 = getFuncWithClosureModule(10);
+    const funcWithClosure3 = getFuncWithClosureModule(20);
 
     expect(funcWithClosure2()).toEqual(11);
     expect(funcWithClosure2()).toEqual(12);
+    expect(funcWithClosure3()).toEqual(21);
+    expect(funcWithClosure3()).toEqual(22);
 
     // this is not Module Pattern, because we can access obj.value
     const obj = {
@@ -494,18 +502,237 @@ describe("Lexical Scope", () => {
 describe("Objects", () => {
   /**
    * JavaScript makes use of 2 types of scopes:
-   *   - Lexical Scopes: created at the parsing step, and cannot be changed
-   *   at the execution time.
-   *   - Dynamic Scopes: created at the execution time and can be changed
-   *   during the execution of the JavaScript codebase and they are referenced
-   *   by the 'this' keyword.
+   *   - Lexical Scopes: decided at the parsing step, and are the same for the
+   *   entire program execution.
+   *   - Dynamic Scopes: decided at the execution time and they are dynamic
+   *   because they are relative to where the function was called from. A
+   *   dynamic scope is called context and this behaviour is achieved with
+   *   objects
    */
+
+  test("4 ways to create a context", () => {
+    /**
+     * A context is represented by the enclosing object and "this" will
+     * reference it.
+     */
+
+    /**
+     * 1. Create an object and "this" will reference it. Arrow functions
+     * don't work in this scenario.
+     */
+    const obj = {
+      value: 1,
+      print1: function () {
+        return `Print: ${this.value}`;
+      },
+      print2: function () {
+        const th = (function () {
+          return (function () {
+            return this;
+          })();
+        })();
+
+        const print = this.print1;
+        return print() + `; th === global => ${th === global}`;
+      },
+      print3: () => {
+        return `Print: ${this.value}`;
+      },
+    };
+
+    expect(obj.print1()).toEqual("Print: 1");
+    /**
+     * Print2 returns "Print: undefined" because functions are objects and
+     * this will reference what this represents in a function context, not
+     * classic object context. This in a function context is the global object
+     * (window), but in "use strict", this for a function context is undefined.
+     */
+    expect(obj.print2()).toEqual("Print: undefined; th === global => true");
+    expect(obj.print3()).toEqual("Print: undefined");
+
+    /**
+     * 2. Bind a context to a function call. It is like saying call this
+     * function from the context I give you as parameter. Arrow functions don't
+     * work in this scenario.
+     */
+
+    expect(obj.print1.call({ value: 100 })).toEqual("Print: 100");
+    expect(obj.print1.apply({ value: 100 })).toEqual("Print: 100");
+    expect(obj.print1.bind({ value: 100 })()).toEqual("Print: 100");
+
+    expect(obj.print3.call({ value: 100 })).toEqual("Print: undefined");
+
+    /**
+     * 3. With the new keyword. See "new keyword" bellow for more. Arrow
+     * functions don't work in this scenario.
+     */
+
+    function MyObj(value) {
+      this.value = value;
+    }
+    MyObj.prototype.print1 = function () {
+      return `Print: ${this.value}`;
+    };
+    MyObj.prototype.print2 = () => {
+      return `Print: ${this.value}`;
+    };
+
+    const myObj = new MyObj(10);
+    expect(myObj.print1()).toEqual("Print: 10");
+    expect(myObj.print2()).toEqual("Print: undefined");
+
+    /**
+     * 4. With the class keyword, which is just syntactic sugar for the
+     * previous approach. Arrow functions work in this scenario.
+     */
+
+    class MyObjClass {
+      constructor(value) {
+        this.value = value;
+      }
+
+      print1() {
+        return `Print: ${this.value}`;
+      }
+      print2 = () => {
+        return `Print: ${this.value}`;
+      };
+    }
+
+    const myObjClass = new MyObjClass(20);
+    expect(myObjClass.print1()).toEqual("Print: 20");
+    expect(myObjClass.print2()).toEqual("Print: 20");
+  });
+
+  test("this keyword", () => {
+    /**
+     * "this" keyword is a reference to the enclosing context (object) from
+     * which the function was called from, not where it was defined. When
+     * deciding what is "this" for a function, look where it is called, not
+     * where it is defined. Look where it is defined when talking about arrow
+     * functions.
+     * "this" is the global context (window) or undefined with "use strict"
+     * when a function is used as the context.
+     * "this" helps us achieve the dynamic scope behaviour which means that we
+     * can create a function once and use the variables of a specific context.
+     * "this" is assigned at runtime, not at parsing step when scopes are
+     * created.
+     * "this" will reference the global context (window), if it is used outside
+     * any context.
+     */
+
+    const arr = [
+      100,
+      function () {
+        return `Print: ${this[0]}`;
+      },
+    ];
+    expect(arr[1]()).toEqual("Print: 100");
+
+    let th = (function () {
+      return (function () {
+        return this;
+      })();
+    })();
+    expect(th === global).toBeTruthy();
+
+    th = function () {
+      return function () {
+        return this;
+      }.call(this);
+    }.call({ value: 10 });
+    expect(th).toEqual({ value: 10 });
+  });
+
+  test("Prototype", () => {
+    /**
+     * When we declare a function (not arrow function), a default prototype property
+     * will be added which is an object that has a property called "constructor" which
+     * is a reference to that function and is linked to the prototype of the Object,
+     * creating a prototype chain.
+     *
+     * The prototype chain works the same way as the scopes, if a property or
+     * method is not found on the context object, it looks for the next prototype
+     * in chain, then to the next one, till it reaches the Object prototype.
+     */
+
+    function A() {
+      this.value = 3;
+    }
+    expect(A.prototype.constructor).toBe(A);
+    expect(A.prototype).toEqual({});
+
+    /**
+     * We can create a prototype chain with Object.create() and an object can access
+     * it's prototype with "__proto__" (dunder proto) default property.
+     */
+
+    const obj = Object.create({
+      print: function () {
+        return this.value;
+      },
+    });
+    obj.value = 3;
+    expect(obj.print()).toEqual(3);
+    expect(obj.__proto__).toEqual({ print: obj.print });
+
+    /**
+     * We can creating a prototype chain with the help of prototype inheritance.
+     */
+
+    function Animal(name) {
+      this.name = name;
+    }
+    Animal.prototype.getName = function () {
+      return this.name;
+    };
+
+    const animal = new Animal("Dog");
+    expect(animal.getName()).toEqual("Dog");
+
+    function Human(name, age) {
+      this.age = age;
+      Animal.call(this, name);
+    }
+    Human.prototype = Object.create(Animal.prototype);
+    Human.prototype.getAge = function () {
+      return this.age;
+    };
+    Human.prototype.getName = function () {
+      return (
+        this.__proto__.__proto__.getName.call(this) +
+        " " +
+        this.__proto__.getAge.call(this)
+      );
+    };
+
+    const human = new Human("Human", 12);
+    expect(human.getName()).toEqual("Human 12");
+  });
 
   test("new keyword", () => {
     /**
-     *
+     * When calling a function with new keyword, we call that function a
+     * constructor function and 4 things happen:
+     * 1. Creates an empty, plain JavaScript object that will serve as this.
+     * 2. Adds a property to the new object (__proto__) that links to the
+     * constructor function's prototype object that we are calling with new.
+     * 3. Call the function with that new object serving as this
+     * 4. If the function doesn't return an object, return the object created
+     * at step 1.
      */
 
+    function Test() {}
+    Test.prototype.print = function () {
+      return 1;
+    };
+    const t = new Test();
+    expect(t.__proto__).toBe(Test.prototype);
+
+    /**
+     * Recreate the String object functionality that makes it work with new
+     * and without it.
+     */
     function Str(value) {
       this.value = `${value}`;
       return this.value;
@@ -536,34 +763,33 @@ describe("Objects", () => {
     expect(person2.age).toEqual(32);
   });
 
-  test("Prototype", () => {
-    function Animal(name) {
-      this.name = name;
-    }
-    Animal.prototype.getName = function () {
-      return this.name;
+  test("Arrow functions", () => {
+    /**
+     * Arrow functions don't have a this binding attached to their call and
+     * will look for a this lexically till they find one in the scope they
+     * were created, not in the scope of where they were called, the same way
+     * they will look for a variable. They will search the scope tree till
+     * they reach a function's this or the global this.
+     *
+     * Arrow functions don't have a prototype, so they cannot be used as
+     * constructor function, the "new" call won't work with them and an error
+     * will be raised.
+     */
+
+    const obj = {
+      value: "A",
+      child: {
+        value: "B",
+        print: () => this.value,
+        print2: function () {
+          return (() => this.value)();
+        },
+      },
+      print: () => this.value,
     };
 
-    const animal = new Animal("Dog");
-    expect(animal.getName()).toEqual("Dog");
-
-    function Human(name, age) {
-      this.age = age;
-      Animal.call(this, name);
-    }
-    Human.prototype = Object.create(Animal.prototype);
-    Human.prototype.getAge = function () {
-      return this.age;
-    };
-    Human.prototype.getName = function () {
-      return (
-        this.__proto__.__proto__.getName.call(this) +
-        " " +
-        this.__proto__.getAge.call(this)
-      );
-    };
-
-    const human = new Human("Human", 12);
-    expect(human.getName()).toEqual("Human 12");
+    expect(obj.print()).toEqual(undefined);
+    expect(obj.child.print()).toEqual(undefined);
+    expect(obj.child.print2()).toEqual("B");
   });
 });
